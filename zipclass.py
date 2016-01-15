@@ -1,6 +1,7 @@
 #coding=utf-8
 import zipfile
 import os
+import time
 '''
 文件压缩类
 '''
@@ -94,14 +95,12 @@ class Zipclass(object):
         if os.path.exists(path) == False:
             return
         
-        cnt = 0
         while True:
-            newfilename = filename + str(cnt)
+            newfilename = filename + time.strftime('%Y%m%d%H%M%S', time.gmtime())
             path = self.path + r"/" + newfilename + r".zip"
             if os.path.exists(path) == False:
                 self.zipname = newfilename
                 return
-            cnt += 1
         
     #信息合法性检查
     def __availability(self):
@@ -133,6 +132,7 @@ class Zipclass(object):
         
 def main():
     ziptest = Zipclass("state-changetest", ".", ["zipclass.py", "新建文本文档.txt", "README.md", "test.txt", "state-change.log"])
+    #print int(time.time())
         
 if __name__ == "__main__":
     main()
