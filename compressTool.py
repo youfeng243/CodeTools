@@ -1,12 +1,67 @@
 #coding=utf-8
 import zipfile
-import os
+import threading
+import copy
 import time
+import os
+
 '''
-ÎÄ¼şÑ¹ËõÀà
+æ–‡ä»¶å¤¹æ‰«æç±»:
+åªæ‰«æå½“å‰æ–‡ä»¶å¤¹ï¼Œä¸é€’å½’æ‰«æ
+'''
+class FileScanclass(object):
+    
+    ALLFILE = "all file"
+
+    #æ–‡ä»¶å¤¹ç»å¯¹è·¯å¾„ï¼Œéœ€è¦æ‰«æçš„æ–‡ä»¶ç‰¹å¾["abc", "bcd"]
+    def __init__( self, folder, feature ):
+        self.folder = folder
+        self.feature = list(set(copy.deepcopy(feature)))
+        self.filedict = {}
+        
+        #åˆ¤æ–­è·¯å¾„æ˜¯å¦æ­£ç¡®
+        self.__forderexsist()
+        
+    def __forderexsist(self):
+        if os.path.exists(self.folder) == False or os.path.isdir(self.folder) == False:
+            self.folder = "."
+            self.feature = [FileScanclass.ALLFILE]
+    
+    def __marchFeature( self, filename ):
+        if FileScanclass.ALLFILE == self.feature[0]:
+            if FileScanclass.ALLFILE in self.filedict:
+                self.filedict[FileScanclass.ALLFILE].append(filename)
+            else:
+                self.filedict[FileScanclass.ALLFILE] = [filename]
+            return
+        
+        for str in self.feature:
+            tempname = filename.lower()
+            tempstr = str.lower()
+            if tempname.find(tempstr) != -1:
+                if str in self.filedict:
+                    self.filedict[str].append(filename)
+                else:
+                    self.filedict[str] = [filename]
+                return
+            
+    #æ‰«æç›®å½•è¿”å›ä¿¡æ¯
+    def scanFile(self):
+        #print self.folder
+        for filename in os.listdir(self.folder + "/"):
+            path = self.folder + "/" + filename
+            #print path
+            if os.path.isdir(path) == True:
+                continue
+            self.__marchFeature(filename)
+        
+        return self.filedict
+
+'''
+æ–‡ä»¶å‹ç¼©ç±»
 '''
 class Zipclass(object):
-    #zip ÎÄ¼şÃû ĞèÒªÑ¹ËõµÄÎÄ¼şÂ·¾¶  ÎÄ¼şÁĞ±í
+    #zip æ–‡ä»¶å éœ€è¦å‹ç¼©çš„æ–‡ä»¶è·¯å¾„  æ–‡ä»¶åˆ—è¡¨
     def __init__(self, zipname, path, filelist):
         self.zipname = zipname
         self.path = path
@@ -14,18 +69,18 @@ class Zipclass(object):
         self.filedict = {}
         self.valid = False
         
-        #¶Ô´«ÈëĞÅÏ¢ºÏ·¨ĞÔ½øĞĞ¼ì²é
+        #å¯¹ä¼ å…¥ä¿¡æ¯åˆæ³•æ€§è¿›è¡Œæ£€æŸ¥
         self.__availability()
         
-        #¶ÔÎÄ¼ş½øĞĞÑ¹Ëõ
+        #å¯¹æ–‡ä»¶è¿›è¡Œå‹ç¼©
         self.__compress()
     
-    #ÅĞ¶ÏÊÇ·ñÊÇÑ¹ËõÎÄ¼ş
+    #åˆ¤æ–­æ˜¯å¦æ˜¯å‹ç¼©æ–‡ä»¶
     def isZipFile(self, filepath):
-        #ÅĞ¶ÏÊÇ·ñÊÇÑ¹ËõÎÄ¼ş
+        #åˆ¤æ–­æ˜¯å¦æ˜¯å‹ç¼©æ–‡ä»¶
         return zipfile.is_zipfile(filepath)
     
-    #ÎÄ¼şÑ¹Ëõ
+    #æ–‡ä»¶å‹ç¼©
     def __compress(self):
         
         if self.valid == False:
@@ -41,12 +96,12 @@ class Zipclass(object):
                 zfile.write(self.filedict[i])
                 #print self.filedict[i]
             except:
-                IOError("Ñ¹Ëõµ±Ç°ÎÄ¼şÊ§°Ü" + i)
+                IOError("å‹ç¼©å½“å‰æ–‡ä»¶å¤±è´¥" + i)
         zfile.close()
         
         print "INFO: compress success!"
     
-    #É¸Ñ¡ºÏ·¨ÎÄ¼ş
+    #ç­›é€‰åˆæ³•æ–‡ä»¶
     def __filevalid(self):
         
         filedict = {}
@@ -57,22 +112,22 @@ class Zipclass(object):
             if len(self.filelist[i]) <= 0:
                 continue
             
-            #¶ÔÑ¹Ëõ°ü²»½øĞĞÑ¹Ëõ
+            #å¯¹å‹ç¼©åŒ…ä¸è¿›è¡Œå‹ç¼©
             #ext = self.filelist[i].split(".")[-1]
             #if ext == "zip" or ext == "rar" or ext == "7z":
             #    continue
             
             filepath = self.path + r"/" + self.filelist[i]
             
-            #ÅĞ¶ÏÊÇ·ñÊÇÑ¹ËõÎÄ¼ş
+            #åˆ¤æ–­æ˜¯å¦æ˜¯å‹ç¼©æ–‡ä»¶
             if zipfile.is_zipfile(filepath) == True:
                 continue
             
-            #ÏÈÅĞ¶ÏÎÄ¼şÊÇ·ñ´æÔÚ
+            #å…ˆåˆ¤æ–­æ–‡ä»¶æ˜¯å¦å­˜åœ¨
             if os.path.exists(filepath) == False:
                 continue
             
-            #È¥ÖØ
+            #å»é‡
             if self.filelist[i] in filedict:
                 continue
             
@@ -88,7 +143,7 @@ class Zipclass(object):
         #print "INFO: filelist =", self.filelist
         return True
     
-    #ÅĞ¶ÏÊÇ·ñ°üº¬Ä³Ğ©ÌØ¶¨×Ö·û
+    #åˆ¤æ–­æ˜¯å¦åŒ…å«æŸäº›ç‰¹å®šå­—ç¬¦
     def __matchSpecialchar(self, matchstr, speciallist):
         
         for i in speciallist:
@@ -97,12 +152,12 @@ class Zipclass(object):
         
         return False
         
-    #ÅĞ¶Ïzip nameµÄºÏ·¨ĞÔ
+    #åˆ¤æ–­zip nameçš„åˆæ³•æ€§
     def __zipnamevalid(self):
         if len(self.zipname) <= 0:
             return False
         
-        #ÎÄ¼şÃûÃüÃûºÏ·¨ĞÔÅĞ¶Ï
+        #æ–‡ä»¶åå‘½ååˆæ³•æ€§åˆ¤æ–­
         if self.__matchSpecialchar( self.zipname, "\\/:*?\"<>|" ) == True: 
             print "WARN: zipname invalid"
             return False
@@ -121,23 +176,23 @@ class Zipclass(object):
                 self.zipname = newfilename
                 return
         
-    #ĞÅÏ¢ºÏ·¨ĞÔ¼ì²é
+    #ä¿¡æ¯åˆæ³•æ€§æ£€æŸ¥
     def __availability(self):
         
-        #ÅĞ¶ÏÂ·¾¶ÊÇ·ñºÏ·¨
+        #åˆ¤æ–­è·¯å¾„æ˜¯å¦åˆæ³•
         if os.path.isdir(self.path) == False:
             print "ERROR: path invalid!"
             return
         
-        #É¸Ñ¡ºÏ·¨µÄÎÄ¼şÃû
+        #ç­›é€‰åˆæ³•çš„æ–‡ä»¶å
         if self.__filevalid() == False:
             print "ERROR: have no valid file"
             return
         
         
-        #zipÎÄ¼şÃûºÏ·¨ĞÔ¼ì²é
+        #zipæ–‡ä»¶ååˆæ³•æ€§æ£€æŸ¥
         if self.__zipnamevalid() == False:
-            #ÎÄ¼şÃû²»ºÏ·¨ÔòÈ¡µÚÒ»¸öÑ¹ËõÎÄ¼şÃüÃû
+            #æ–‡ä»¶åä¸åˆæ³•åˆ™å–ç¬¬ä¸€ä¸ªå‹ç¼©æ–‡ä»¶å‘½å
             self.zipname = self.filelist[0].split(".")[0]
         
         self.__renamezip(self.zipname)
@@ -146,13 +201,37 @@ class Zipclass(object):
         
         self.valid = True
 
-
-        
+def work( file, filepath,  scandict ):
+    zipname = file + time.strftime('%Y%m%d', time.gmtime())
+    zippoint = Zipclass(zipname, filepath, scandict[file])
+    for path in scandict[file]:
+        temppath = filepath + "/" + path
+        if zippoint.isZipFile(temppath) == True:
+            continue
+        try:
+            if os.path.exists(temppath):
+                os.remove(temppath)
+        except:
+            print("ERROR: delete error " + temppath)
+    
 def main():
-    Zipclass("state-changetest", ".", ["zipclass.py", "ĞÂ½¨ÎÄ±¾ÎÄµµ.txt", "README.md", "test.txt", "state-change.log"])
-    #print int(time.time())
-        
+    filepath = r"E:/C++Code/FixStockClient/Debug/StockDataFile"
+    filefeature = ["FixQuoteLog", "perStockContributeLog", "quoteLog"]
+    scandict = FileScanclass(filepath, filefeature).scanFile()
+    
+    threads = []
+    for file in scandict:
+        t = threading.Thread( target = work, args = ( file, filepath, scandict ) )
+        threads.append(t)
+    
+    for t in threads:
+        t.start()
+    
+    for t in threads:
+        threading.Thread.join(t)
+    
+    print "INFO: All compressed !!!"
+
 if __name__ == "__main__":
     main()
-        
-        
+
