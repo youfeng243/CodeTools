@@ -1,6 +1,5 @@
 #coding=utf-8
 import zipfile
-import copy
 import os
 '''
 文件压缩类
@@ -11,13 +10,30 @@ class Zipclass(object):
         self.zipname = zipname
         self.path = path
         self.filelist = filelist
+        self.filedict = {}
         self.valid = False
         
         #对传入信息合法性进行检查
         self.__availability()
         
         #对文件进行压缩
+        self.__compress()
+    
+    #文件压缩
+    def __compress(self):
         
+        print "INFO: begin compress..."
+        
+        zippath = self.path + r"/" + self.zipname
+        zfile = zipfile.ZipFile(zippath, "w", zipfile.ZIP_DEFLATED, True)
+        for i in self.filedict:
+            try:
+                zfile.write(self.filedict[i])
+            except:
+                IOError("压缩当前文件失败" + i)
+        zfile.close()
+        
+        print "INFO: compress success!"
     
     #筛选合法文件
     def __filevalid(self):
@@ -44,12 +60,12 @@ class Zipclass(object):
             filedict[self.filelist[i]] = filepath
         
         self.filedict = filedict
-        self.filelist = copy.deepcopy(filelist)
+        self.filelist = filelist
         if len(self.filedict) == 0:
             return False
             
-        print "filedict =", self.filedict
-        print "filelist =", self.filelist
+        print "INFO: filedict =", self.filedict
+        print "INFO: filelist =", self.filelist
         return True
     
     #判断是否包含某些特定字符
@@ -70,12 +86,22 @@ class Zipclass(object):
         if self.__matchSpecialchar( self.zipname, "\\/:*?\"<>|" ) == True: 
             print "WARN: zipname invalid"
             return False
-        
-        self.zipname += r".zip"
-        
-        print "zipname =", self.zipname
         return True
         
+    def __renamezip( self, filename ):
+        
+        path = self.path + r"/" + filename + r".zip"
+        if os.path.exists(path) == False:
+            return
+        
+        cnt = 0
+        while True:
+            newfilename = filename + str(cnt)
+            path = self.path + r"/" + newfilename + r".zip"
+            if os.path.exists(path) == False:
+                self.zipname = newfilename
+                return
+            cnt += 1
         
     #信息合法性检查
     def __availability(self):
@@ -94,8 +120,11 @@ class Zipclass(object):
         #zip文件名合法性检查
         if self.__zipnamevalid() == False:
             #文件名不合法则取第一个压缩文件命名
-            self.zipname = self.filelist[0].split(".")[0] + r".zip"
-            print "WARN: rename zipname = ", self.zipname
+            self.zipname = self.filelist[0].split(".")[0]
+        
+        self.__renamezip(self.zipname)
+        self.zipname += r".zip"
+        print "INFO: zipname = ", self.zipname
         
         self.valid = True
         print "INFO: all valid"
@@ -103,7 +132,7 @@ class Zipclass(object):
 
         
 def main():
-    ziptest = Zipclass("test", ".", ["zipclass.py", "zipclass.py", "zipclass.py", "fasd"])
+    ziptest = Zipclass("state-changetest", ".", ["zipclass.py", "新建文本文档.txt", "README.md", "test.txt", "state-change.log"])
         
 if __name__ == "__main__":
     main()
