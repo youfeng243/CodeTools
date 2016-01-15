@@ -126,7 +126,6 @@ class Zipclass(object):
         print "INFO: zipname = ", self.zipname
         
         self.valid = True
-        print "INFO: all valid"
 
 
         
